@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import AnalysisStatus
 from app.queue.client import MessageQueue
-from app.schemas import ArticleResponse
+from app.schemas import ArticleResponse, SearchArticlesQuery, ListArticlesQuery
 from app.services import articles as article_service
 from app.services.news import news_service, RateLimitExceeded
 
@@ -26,24 +26,18 @@ def _get_mq() -> MessageQueue:
 
 @router.get("/search", response_model=list[ArticleResponse])
 async def search_articles(
-    q: str = Query(..., description="Query to search on GNews"),
-    max_results: int = Query(10, ge=1, le=10),
-    lang: str = Query("en", description="Language code (e.g. 'en')"),
-    country: Optional[str] = Query(None, description="Country code (e.g. 'us')"),
-    sortby: Optional[str] = Query(None, description="'publishedAt' or 'relevance'"),
-    from_date: Optional[str] = Query(None, description="UTC ISO format date (e.g. '2023-01-01T00:00:00Z')"),
-    to_date: Optional[str] = Query(None, description="UTC ISO format date (e.g. '2023-01-01T00:00:00Z')"),
+    query_params: SearchArticlesQuery = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
     try:
         raw_articles = await news_service.search(
-            query=q,
-            max_results=max_results,
-            lang=lang,
-            country=country,
-            sortby=sortby,
-            from_date=from_date,
-            to_date=to_date,
+            query=query_params.q,
+            max_results=query_params.max_results,
+            lang=query_params.lang,
+            country=query_params.country,
+            sortby=query_params.sortby,
+            from_date=query_params.from_date,
+            to_date=query_params.to_date,
         )
     except RateLimitExceeded as e:
         raise HTTPException(status_code=429, detail=str(e))
@@ -53,16 +47,17 @@ async def search_articles(
 
 @router.get("", response_model=list[ArticleResponse])
 async def list_articles(
-    q: Optional[str] = Query(None, description="Full-text search on DB"),
-    status: Optional[AnalysisStatus] = Query(None, description="Filter by status"),
-    start_date: Optional[datetime] = Query(None),
-    end_date: Optional[datetime] = Query(None),
-    limit: int = Query(20, ge=1, le=100),
-    offset: int = Query(0, ge=0),
+    query_params: ListArticlesQuery = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
     return await article_service.query(
-        db, q=q, status=status, start_date=start_date, end_date=end_date, limit=limit, offset=offset
+        db,
+        q=query_params.q,
+        status=query_params.status,
+        start_date=query_params.start_date,
+        end_date=query_params.end_date,
+        limit=query_params.limit,
+        offset=query_params.offset,
     )
 
 @router.get("/{article_id}", response_model=ArticleResponse)
