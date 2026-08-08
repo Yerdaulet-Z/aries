@@ -28,7 +28,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # FastAPI REST server
   api:
     build: .
     ports:
@@ -38,27 +37,14 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://aries:aries@db:5432/aries
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    volumes:
+      - ./.env:/app/.env:ro
     depends_on:
       db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
 
-  # Background news poller (saves to DB directly)
-  poller:
-    build: .
-    command: ["python", "-m", "app.queue.poller"]
-    env_file:
-      - .env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://aries:aries@db:5432/aries
-    volumes:
-      - ./.env:/app/.env:ro
-    depends_on:
-      db:
-        condition: service_healthy
-
-  # AI analysis worker (consumes from RabbitMQ)
   worker:
     build: .
     command: ["python", "-m", "app.queue.consumer"]

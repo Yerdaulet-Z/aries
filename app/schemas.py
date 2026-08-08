@@ -1,20 +1,15 @@
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
 from app.models import AnalysisStatus, Sentiment
 
-
-# --- Response schemas ---
-
-
 class ArticleResponse(BaseModel):
-    """Full article representation returned by all endpoints."""
-
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: UUID
     title: str
     description: Optional[str] = None
     content: Optional[str] = None
@@ -28,17 +23,12 @@ class ArticleResponse(BaseModel):
     sentiment: Optional[Sentiment] = None
     sentiment_score: Optional[float] = None
     analysis_error: Optional[str] = None
+    ai_raw_response: Optional[dict] = None
 
     created_at: datetime
     updated_at: datetime
 
-
-# --- Internal schemas (not exposed via API) ---
-
-
 class AnalysisResult(BaseModel):
-    """Structured output parsed from OpenAI response."""
-
     summary: str
     sentiment: Sentiment
     sentiment_score: float
