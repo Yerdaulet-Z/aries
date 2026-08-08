@@ -1,0 +1,7 @@
+fastapi[standard]
+sqlalchemy[asyncio]
+asyncpg
+httpx
+openai
+pydantic-settings
+aio-pika

@@ -1,0 +1,78 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: aries
+      POSTGRES_USER: aries
+      POSTGRES_PASSWORD: aries
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aries"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI REST server
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://aries:aries@db:5432/aries
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Background news poller (saves to DB directly)
+  poller:
+    build: .
+    command: ["python", "-m", "app.queue.poller"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://aries:aries@db:5432/aries
+    volumes:
+      - ./.env:/app/.env:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # AI analysis worker (consumes from RabbitMQ)
+  worker:
+    build: .
+    command: ["python", "-m", "app.queue.consumer"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://aries:aries@db:5432/aries
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  rabbitmq_data:
