@@ -41,7 +41,7 @@ class Article(Base):
     url: Mapped[str] = mapped_column(String(2048), unique=True, nullable=False)
     image_url: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True)
     source_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False)
 
     analysis_status: Mapped[AnalysisStatus] = mapped_column(
         Enum(AnalysisStatus, name="analysis_status_enum", create_type=False),
@@ -57,10 +57,10 @@ class Article(Base):
     ai_raw_response: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=False), server_default=func.timezone('utc', func.now()), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=False), server_default=func.timezone('utc', func.now()), nullable=False
     )
 
     __table_args__ = (

@@ -12,12 +12,13 @@ logger = logging.getLogger(__name__)
 
 def _parse_date(date_str: str | None) -> datetime:
     if not date_str:
-        return datetime.now(timezone.utc)
+        return datetime.now(timezone.utc).replace(tzinfo=None)
     try:
         cleaned = date_str.replace("Z", "+00:00") if date_str.endswith("Z") else date_str
-        return datetime.fromisoformat(cleaned)
+        dt = datetime.fromisoformat(cleaned)
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
     except (ValueError, AttributeError):
-        return datetime.now(timezone.utc)
+        return datetime.now(timezone.utc).replace(tzinfo=None)
 
 async def upsert_from_gnews(db: AsyncSession, raw_articles: list[dict]) -> list[Article]:
     if not raw_articles:

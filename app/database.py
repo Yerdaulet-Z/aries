@@ -22,7 +22,7 @@ async def init_db() -> None:
             CREATE OR REPLACE FUNCTION update_updated_at_column()
             RETURNS TRIGGER AS $$
             BEGIN
-                NEW.updated_at = now();
+                NEW.updated_at = timezone('utc', now());
                 RETURN NEW;
             END;
             $$ LANGUAGE plpgsql;
