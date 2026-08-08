@@ -28,10 +28,23 @@ def _get_mq() -> MessageQueue:
 async def search_articles(
     q: str = Query(..., description="Query to search on GNews"),
     max_results: int = Query(10, ge=1, le=10),
+    lang: str = Query("en", description="Language code (e.g. 'en')"),
+    country: Optional[str] = Query(None, description="Country code (e.g. 'us')"),
+    sortby: Optional[str] = Query(None, description="'publishedAt' or 'relevance'"),
+    from_date: Optional[str] = Query(None, description="UTC ISO format date (e.g. '2023-01-01T00:00:00Z')"),
+    to_date: Optional[str] = Query(None, description="UTC ISO format date (e.g. '2023-01-01T00:00:00Z')"),
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        raw_articles = await news_service.search(query=q, max_results=max_results)
+        raw_articles = await news_service.search(
+            query=q,
+            max_results=max_results,
+            lang=lang,
+            country=country,
+            sortby=sortby,
+            from_date=from_date,
+            to_date=to_date,
+        )
     except RateLimitExceeded as e:
         raise HTTPException(status_code=429, detail=str(e))
         
