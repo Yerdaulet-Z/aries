@@ -34,7 +34,6 @@ async def upsert_from_gnews(db: AsyncSession, raw_articles: list[dict]) -> list[
         seen_urls.add(url)
         urls.append(url)
         rows.append({
-            "id": uuid.uuid4(),
             "title": item.get("title", ""),
             "description": item.get("description"),
             "content": item.get("content"),
