@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aries - AI News Analysis</title>
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script>
+        function switchTab(tabId) {
+            // Update buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + tabId).classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById('content-' + tabId).classList.add('active');
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Aries News</h1>
+            <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
+                Discover the latest news and get AI-powered insights, summaries, and sentiment analysis instantly.
+            </p>
+        </header>
+
+        <div class="tabs">
+            <button id="btn-discover" class="tab-btn active" onclick="switchTab('discover')">Discover News</button>
+            <button id="btn-vault" class="tab-btn" onclick="switchTab('vault')" 
+                    hx-get="/ui/vault" hx-target="#vault-results" hx-trigger="click">
+                Analysis Vault
+            </button>
+        </div>
+
+        <main>
+            <!-- Discover Tab -->
+            <div id="content-discover" class="tab-content active">
+                <form class="search-form" hx-get="/ui/discover" hx-target="#discover-results" hx-indicator="#search-indicator">
+                    <input type="text" name="q" class="search-input glass-panel" placeholder="Search topics (e.g., Technology, Finance, Apple)..." required>
+                    <button type="submit" class="btn-primary">Search</button>
+                </form>
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <img id="search-indicator" class="htmx-indicator" src="https://cdnjs.cloudflare.com/ajax/libs/galleriffic/2.0.1/css/loader.gif" alt="Loading..." width="32" height="32" style="filter: invert(1); opacity: 0.5;">
+                </div>
+                
+                <div id="discover-results" class="articles-grid">
+                    <!-- Discover results will be injected here by HTMX -->
+                    <div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 3rem 0;">
+                        Enter a topic above to discover recent articles.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vault Tab -->
+            <div id="content-vault" class="tab-content">
+                
+                <!-- Vault Filters -->
+                <form class="search-form glass-panel" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem; padding: 1rem;" 
+                      hx-get="/ui/vault" hx-target="#vault-results" hx-trigger="change, submit">
+                    
+                    <input type="text" name="q" class="search-input" style="flex: 1; min-width: 200px; padding: 0.5rem;" placeholder="Search in vault..." autocomplete="off">
+                    
+                    <select name="status" style="padding: 0.5rem; background: var(--bg-color); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        <option value="">Any Status</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="QUEUED">Queued</option>
+                        <option value="EXTRACTING_TEXT">Extracting Text</option>
+                        <option value="GENERATING_SUMMARY">Generating Summary</option>
+                        <option value="SAVING_RESULTS">Saving Results</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="FAILED">Failed</option>
+                    </select>
+
+                    <select name="sentiment" style="padding: 0.5rem; background: var(--bg-color); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        <option value="">Any Sentiment</option>
+                        <option value="POSITIVE">Positive</option>
+                        <option value="NEUTRAL">Neutral</option>
+                        <option value="NEGATIVE">Negative</option>
+                    </select>
+                    
+                    <select name="sort_by" style="padding: 0.5rem; background: var(--bg-color); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                        <option value="default">Default (Analyzed First)</option>
+                        <option value="date_desc">Newest First</option>
+                        <option value="date_asc">Oldest First</option>
+                        <option value="score_desc">Highest Sentiment Score</option>
+                        <option value="score_asc">Lowest Sentiment Score</option>
+                    </select>
+                    
+                    <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem;">Apply</button>
+                </form>
+
+                <div id="vault-results" class="articles-grid">
+                    <!-- Vault results will be injected here by HTMX -->
+                    <div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 3rem 0;">
+                        Loading vault...
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

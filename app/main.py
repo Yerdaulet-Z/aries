@@ -8,6 +8,8 @@ from app.core.config import settings
 from app.db.session import init_db
 from app.core.rabbitmq import MessageQueue
 from app.api.routes import router, set_message_queue
+from app.api.views import router as views_router
+from fastapi.staticfiles import StaticFiles
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,16 +17,21 @@ logging.basicConfig(
 )
 
 mq = MessageQueue(settings.RABBITMQ_URL)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: init DB + connect RabbitMQ. Shutdown: close MQ."""
     await init_db()
-    await mq.connect()
-    set_message_queue(mq)
+    
+    _mq = MessageQueue(settings.RABBITMQ_URL)
+    await _mq.connect()
+    
+    set_message_queue(_mq)
+    logger.info("Application started successfully.")
     yield
-    await mq.close()
+    await _mq.close()
 
 
 app = FastAPI(
@@ -42,4 +49,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
 app.include_router(router)
+app.include_router(views_router)

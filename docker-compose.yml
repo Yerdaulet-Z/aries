@@ -39,6 +39,7 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
     volumes:
       - ./.env:/app/.env:ro
+      - ./app:/app/app
     depends_on:
       db:
         condition: service_healthy
@@ -53,6 +54,9 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://aries:aries@db:5432/aries
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./app:/app/app
     depends_on:
       db:
         condition: service_healthy

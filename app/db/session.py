@@ -9,10 +9,9 @@ AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_co
 
 async def init_db() -> None:
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.execute(text("DROP TYPE IF EXISTS analysis_status_enum CASCADE;"))
-        await conn.execute(text("DROP TYPE IF EXISTS sentiment_enum CASCADE;"))
         await conn.run_sync(Base.metadata.create_all)
+        for stage in ["EXTRACTING_TEXT", "GENERATING_SUMMARY", "SAVING_RESULTS"]:
+            await conn.execute(text(f"ALTER TYPE analysis_status_enum ADD VALUE IF NOT EXISTS '{stage}';"))
         await conn.execute(text("""
             CREATE INDEX IF NOT EXISTS ix_articles_fts
             ON articles

@@ -7,7 +7,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import joinedload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.models import AnalysisStatus, Article
+from app.db.models import AnalysisStatus, Article, AISummary, Sentiment
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,9 @@ def _parse_date(date_str: str | None) -> datetime:
     try:
         cleaned = date_str.replace("Z", "+00:00") if date_str.endswith("Z") else date_str
         dt = datetime.fromisoformat(cleaned)
-        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt
     except (ValueError, AttributeError):
         return datetime.now(timezone.utc).replace(tzinfo=None)
 
@@ -69,12 +71,16 @@ async def query(
     *,
     q: Optional[str] = None,
     status: Optional[AnalysisStatus] = None,
+    sentiment: Optional[Sentiment] = None,
+    min_score: Optional[float] = None,
+    max_score: Optional[float] = None,
+    sort_by: str = "default",
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     limit: int = 20,
     offset: int = 0,
 ) -> list[Article]:
-    stmt = select(Article).options(joinedload(Article.ai_summary))
+    stmt = select(Article).options(joinedload(Article.ai_summary)).outerjoin(AISummary)
     if q:
         stmt = stmt.where(
             text("to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, '')) @@ plainto_tsquery('english', :q)")
@@ -82,11 +88,30 @@ async def query(
         )
     if status:
         stmt = stmt.where(Article.analysis_status == status)
+    if sentiment:
+        stmt = stmt.where(AISummary.sentiment == sentiment)
+    if min_score is not None:
+        stmt = stmt.where(AISummary.sentiment_score >= min_score)
+    if max_score is not None:
+        stmt = stmt.where(AISummary.sentiment_score <= max_score)
     if start_date:
         stmt = stmt.where(Article.published_at >= start_date)
     if end_date:
         stmt = stmt.where(Article.published_at <= end_date)
-    stmt = stmt.order_by(Article.published_at.desc()).limit(limit).offset(offset)
+        
+    if sort_by == "date_desc":
+        stmt = stmt.order_by(Article.published_at.desc())
+    elif sort_by == "date_asc":
+        stmt = stmt.order_by(Article.published_at.asc())
+    elif sort_by == "score_desc":
+        stmt = stmt.order_by(AISummary.sentiment_score.desc().nulls_last())
+    elif sort_by == "score_asc":
+        stmt = stmt.order_by(AISummary.sentiment_score.asc().nulls_last())
+    else:
+        # Default: COMPLETED first, then date desc
+        stmt = stmt.order_by((Article.analysis_status == AnalysisStatus.COMPLETED).desc(), Article.published_at.desc())
+
+    stmt = stmt.limit(limit).offset(offset)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 

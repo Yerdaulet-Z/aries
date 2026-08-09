@@ -50,10 +50,15 @@ async def list_articles(
     query_params: ListArticlesQuery = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
+    sort_val = query_params.sort_by.value if hasattr(query_params.sort_by, "value") else str(query_params.sort_by)
     return await article_service.query(
         db,
         q=query_params.q,
         status=query_params.status,
+        sentiment=query_params.sentiment,
+        min_score=query_params.min_score,
+        max_score=query_params.max_score,
+        sort_by=sort_val,
         start_date=query_params.start_date,
         end_date=query_params.end_date,
         limit=query_params.limit,
@@ -74,8 +79,14 @@ async def analyze_article(article_id: uuid.UUID, db: AsyncSession = Depends(get_
         raise HTTPException(status_code=404, detail="Article not found")
     if article.analysis_status == AnalysisStatus.COMPLETED:
         raise HTTPException(status_code=409, detail="Article already analyzed")
-    if article.analysis_status in (AnalysisStatus.QUEUED, AnalysisStatus.PROCESSING):
-        raise HTTPException(status_code=409, detail=f"Article already {article.analysis_status.value}")
+    if article.analysis_status in (
+        AnalysisStatus.QUEUED,
+        AnalysisStatus.PROCESSING,
+        AnalysisStatus.EXTRACTING_TEXT,
+        AnalysisStatus.GENERATING_SUMMARY,
+        AnalysisStatus.SAVING_RESULTS,
+    ):
+        raise HTTPException(status_code=409, detail=f"Article analysis already in progress ({article.analysis_status.value})")
 
     await article_service.update_status(db, article, AnalysisStatus.QUEUED)
     await _get_mq().publish(ANALYSIS_QUEUE, {"article_id": str(article.id)})

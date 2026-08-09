@@ -1,0 +1,89 @@
+{% for article in articles %}
+<div class="card glass-panel" id="article-card-{{ article.id }}"
+     {% if (article.analysis_status|string) in ["AnalysisStatus.QUEUED", "QUEUED", "AnalysisStatus.PROCESSING", "PROCESSING", "AnalysisStatus.EXTRACTING_TEXT", "EXTRACTING_TEXT", "AnalysisStatus.GENERATING_SUMMARY", "GENERATING_SUMMARY", "AnalysisStatus.SAVING_RESULTS", "SAVING_RESULTS"] %}
+     hx-get="/ui/vault/card/{{ article.id }}"
+     hx-trigger="every 1s"
+     hx-swap="outerHTML"
+     {% endif %}>
+     
+    {% if article.image_url %}
+        <img src="{{ article.image_url }}" alt="Article Image" class="card-img" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">
+    {% else %}
+        <div class="card-img" style="background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">No Image</div>
+    {% endif %}
+    
+    <div class="card-body">
+        <h3 class="card-title"><a href="{{ article.url }}" target="_blank" style="color: inherit; text-decoration: none;">{{ article.title }}</a></h3>
+        <p class="card-text">{{ article.description[:150] if article.description else '' }}...</p>
+
+        {% set s_status = article.analysis_status|string %}
+        
+        <!-- AI Summary Details if Completed -->
+        {% if s_status in ["AnalysisStatus.COMPLETED", "COMPLETED"] and article.ai_summary %}
+            <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; font-size: 0.9rem; margin-top: 0.8rem; margin-bottom: 0.8rem;">
+                <strong>AI Summary:</strong>
+                <p style="margin-top: 0.5rem; color: var(--text-secondary);">{{ article.ai_summary.summary }}</p>
+            </div>
+            
+            <div class="card-footer">
+                <span class="badge 
+                    {% if article.ai_summary.sentiment == 'POSITIVE' %} badge-positive
+                    {% elif article.ai_summary.sentiment == 'NEGATIVE' %} badge-negative
+                    {% else %} badge-neutral
+                    {% endif %}
+                ">
+                    {{ article.ai_summary.sentiment.value if article.ai_summary.sentiment else article.ai_summary.sentiment }} ({{ "%.2f"|format(article.ai_summary.sentiment_score) if article.ai_summary.sentiment_score else "0" }})
+                </span>
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">
+                    {{ article.source_name }}
+                </span>
+            </div>
+        {% elif s_status in ["AnalysisStatus.QUEUED", "QUEUED", "AnalysisStatus.EXTRACTING_TEXT", "EXTRACTING_TEXT", "AnalysisStatus.GENERATING_SUMMARY", "GENERATING_SUMMARY", "AnalysisStatus.SAVING_RESULTS", "SAVING_RESULTS", "AnalysisStatus.PROCESSING", "PROCESSING"] %}
+            <!-- Stage Progress Indicator & Bar -->
+            <div style="margin-top: 0.8rem; margin-bottom: 0.8rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.4rem;">
+                    <span>
+                        {% if s_status in ["AnalysisStatus.QUEUED", "QUEUED"] %}Queued in RabbitMQ...
+                        {% elif s_status in ["AnalysisStatus.EXTRACTING_TEXT", "EXTRACTING_TEXT"] %}Extracting content...
+                        {% elif s_status in ["AnalysisStatus.GENERATING_SUMMARY", "GENERATING_SUMMARY"] %}Consulting OpenAI...
+                        {% elif s_status in ["AnalysisStatus.SAVING_RESULTS", "SAVING_RESULTS"] %}Persisting results...
+                        {% else %}Processing...
+                        {% endif %}
+                    </span>
+                    <span style="font-weight: 600; color: var(--text-primary);">
+                        {% if s_status in ["AnalysisStatus.QUEUED", "QUEUED"] %}15%
+                        {% elif s_status in ["AnalysisStatus.EXTRACTING_TEXT", "EXTRACTING_TEXT"] %}40%
+                        {% elif s_status in ["AnalysisStatus.GENERATING_SUMMARY", "GENERATING_SUMMARY"] %}75%
+                        {% elif s_status in ["AnalysisStatus.SAVING_RESULTS", "SAVING_RESULTS"] %}95%
+                        {% else %}50%
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="progress-container" style="background: rgba(255,255,255,0.08); border-radius: 6px; height: 8px; overflow: hidden;">
+                    <div class="progress-bar processing" style="
+                        width: {% if s_status in ['AnalysisStatus.QUEUED', 'QUEUED'] %}15%{% elif s_status in ['AnalysisStatus.EXTRACTING_TEXT', 'EXTRACTING_TEXT'] %}40%{% elif s_status in ['AnalysisStatus.GENERATING_SUMMARY', 'GENERATING_SUMMARY'] %}75%{% elif s_status in ['AnalysisStatus.SAVING_RESULTS', 'SAVING_RESULTS'] %}95%{% else %}50%{% endif %};
+                        transition: width 0.4s ease-in-out; height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7);
+                    "></div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">{{ article.source_name }}</span>
+            </div>
+        {% else %}
+            <div class="card-footer" style="margin-top: 1rem;">
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">{{ article.source_name }}</span>
+                <button class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;"
+                        hx-post="/ui/analyze/{{ article.id }}"
+                        hx-target="closest .card"
+                        hx-swap="outerHTML">
+                    Analyze
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 3rem 0;">
+    No articles found for that search.
+</div>
+{% endfor %}

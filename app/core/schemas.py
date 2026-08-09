@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.db.models import AnalysisStatus, Sentiment
 import enum
@@ -12,14 +12,29 @@ class SortBy(str, enum.Enum):
     RELEVANCE = "relevance"
 
 
+class VaultSortBy(str, enum.Enum):
+    DEFAULT = "default"
+    DATE_DESC = "date_desc"
+    DATE_ASC = "date_asc"
+    SCORE_DESC = "score_desc"
+    SCORE_ASC = "score_asc"
+
+
 class SearchArticlesQuery(BaseModel):
-    q: str = Field(..., min_length=1, max_length=100, description="Query to search on GNews")
+    q: str = Field(..., max_length=100, description="Query to search on GNews")
     max_results: int = Field(10, ge=1, le=10)
     lang: str = Field("en", min_length=2, max_length=2, description="Language code (e.g. 'en')")
-    country: Optional[str] = Field(None, min_length=2, max_length=2, description="Country code (e.g. 'us')")
-    sortby: Optional[SortBy] = Field(None, description="'publishedAt' or 'relevance'")
+    country: Optional[str] = Field(None, description="Country code (e.g. 'us')")
+    sortby: Optional[Union[SortBy, str]] = Field(None, description="'publishedAt' or 'relevance'")
     from_date: Optional[datetime] = Field(None, description="UTC ISO format date (e.g. '2023-01-01T00:00:00Z')")
     to_date: Optional[datetime] = Field(None, description="UTC ISO format date (e.g. '2023-01-01T00:00:00Z')")
+
+    @field_validator("country", "sortby", mode="before")
+    @classmethod
+    def empty_str_to_none_search(cls, v):
+        if not v or v == "":
+            return None
+        return v
 
     @model_validator(mode='after')
     def check_dates(self) -> 'SearchArticlesQuery':
@@ -29,12 +44,59 @@ class SearchArticlesQuery(BaseModel):
 
 
 class ListArticlesQuery(BaseModel):
-    q: Optional[str] = Field(None, min_length=1, max_length=100, description="Full-text search on DB")
-    status: Optional[AnalysisStatus] = Field(None, description="Filter by status")
+    q: Optional[str] = Field(None, max_length=100, description="Full-text search on DB")
+    status: Optional[Union[AnalysisStatus, str]] = Field(None, description="Filter by status")
+    sentiment: Optional[Union[Sentiment, str]] = Field(None, description="Filter by sentiment")
+    min_score: Optional[float] = Field(None, ge=-1.0, le=1.0)
+    max_score: Optional[float] = Field(None, ge=-1.0, le=1.0)
+    sort_by: Union[VaultSortBy, str] = Field(VaultSortBy.DEFAULT)
     start_date: Optional[datetime] = Field(None)
     end_date: Optional[datetime] = Field(None)
     limit: int = Field(20, ge=1, le=100)
     offset: int = Field(0, ge=0)
+
+    @field_validator("q", mode="before")
+    @classmethod
+    def parse_q(cls, v):
+        if not v or v == "":
+            return None
+        return v
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def parse_status(cls, v):
+        if not v or v == "":
+            return None
+        if isinstance(v, AnalysisStatus):
+            return v
+        try:
+            return AnalysisStatus(v)
+        except ValueError:
+            raise ValueError(f"Invalid status: {v}")
+
+    @field_validator("sentiment", mode="before")
+    @classmethod
+    def parse_sentiment(cls, v):
+        if not v or v == "":
+            return None
+        if isinstance(v, Sentiment):
+            return v
+        try:
+            return Sentiment(v)
+        except ValueError:
+            raise ValueError(f"Invalid sentiment: {v}")
+
+    @field_validator("sort_by", mode="before")
+    @classmethod
+    def parse_sort_by(cls, v):
+        if not v or v == "":
+            return VaultSortBy.DEFAULT
+        if isinstance(v, VaultSortBy):
+            return v
+        try:
+            return VaultSortBy(v)
+        except ValueError:
+            return VaultSortBy.DEFAULT
 
     @model_validator(mode='after')
     def check_dates(self) -> 'ListArticlesQuery':
