@@ -42,6 +42,15 @@ class ListArticlesQuery(BaseModel):
             raise ValueError('start_date cannot be after end_date')
         return self
 
+class AISummaryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    summary: Optional[str] = Field(None, description="AI-generated comprehensive summary of the article")
+    sentiment: Optional[Sentiment] = Field(None, description="Overall sentiment category (POSITIVE, NEUTRAL, NEGATIVE)")
+    sentiment_score: Optional[float] = Field(None, description="Granular sentiment score from -1.0 (highly negative) to 1.0 (highly positive)")
+    analysis_error: Optional[str] = Field(None, description="Error message if the AI analysis failed")
+    ai_raw_response: Optional[dict] = Field(None, description="Raw structured JSON response output from the OpenAI API")
+
 class ArticleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -55,11 +64,7 @@ class ArticleResponse(BaseModel):
     published_at: datetime = Field(..., description="Publication timestamp in UTC")
 
     analysis_status: AnalysisStatus = Field(..., description="Current lifecycle state of the AI analysis job")
-    summary: Optional[str] = Field(None, description="AI-generated comprehensive summary of the article")
-    sentiment: Optional[Sentiment] = Field(None, description="Overall sentiment category (POSITIVE, NEUTRAL, NEGATIVE)")
-    sentiment_score: Optional[float] = Field(None, description="Granular sentiment score from -1.0 (highly negative) to 1.0 (highly positive)")
-    analysis_error: Optional[str] = Field(None, description="Error message if the AI analysis failed")
-    ai_raw_response: Optional[dict] = Field(None, description="Raw structured JSON response output from the OpenAI API")
+    ai_summary: Optional[AISummaryResponse] = Field(None, description="AI analysis summary and sentiment, if available")
 
     created_at: datetime = Field(..., description="Timestamp when the article was first indexed into the database")
     updated_at: datetime = Field(..., description="Timestamp when the article record was last modified")

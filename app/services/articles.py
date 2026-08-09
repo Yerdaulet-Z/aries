@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 from sqlalchemy import select, text
+from sqlalchemy.orm import joinedload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import AnalysisStatus, Article
@@ -50,12 +51,18 @@ async def upsert_from_gnews(db: AsyncSession, raw_articles: list[dict]) -> list[
         await db.commit()
 
     result = await db.execute(
-        select(Article).where(Article.url.in_(urls)).order_by(Article.published_at.desc())
+        select(Article)
+        .options(joinedload(Article.ai_summary))
+        .where(Article.url.in_(urls))
+        .order_by(Article.published_at.desc())
     )
     return list(result.scalars().all())
 
 async def get_by_id(db: AsyncSession, article_id: uuid.UUID) -> Optional[Article]:
-    return await db.get(Article, article_id)
+    result = await db.execute(
+        select(Article).options(joinedload(Article.ai_summary)).where(Article.id == article_id)
+    )
+    return result.scalars().first()
 
 async def query(
     db: AsyncSession,
@@ -67,7 +74,7 @@ async def query(
     limit: int = 20,
     offset: int = 0,
 ) -> list[Article]:
-    stmt = select(Article)
+    stmt = select(Article).options(joinedload(Article.ai_summary))
     if q:
         stmt = stmt.where(
             text("to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, '')) @@ plainto_tsquery('english', :q)")

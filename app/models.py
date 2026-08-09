@@ -14,7 +14,8 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.schema import ForeignKey
 
 class Base(DeclarativeBase):
     pass
@@ -51,13 +52,10 @@ class Article(Base):
         default=AnalysisStatus.PENDING,
         nullable=False,
     )
-    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    sentiment: Mapped[Optional[Sentiment]] = mapped_column(
-        Enum(Sentiment, name="sentiment_enum", create_type=False), nullable=True
+    
+    ai_summary: Mapped[Optional["AISummary"]] = relationship(
+        "AISummary", back_populates="article", cascade="all, delete-orphan"
     )
-    sentiment_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    analysis_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    ai_raw_response: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False), server_default=func.timezone('utc', func.now()), nullable=False
@@ -70,3 +68,19 @@ class Article(Base):
         Index("ix_articles_published_at_desc", published_at.desc()),
         Index("ix_articles_status", "analysis_status"),
     )
+
+class AISummary(Base):
+    __tablename__ = "ai_summary"
+
+    article_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("articles.id", ondelete="CASCADE"), primary_key=True
+    )
+    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    sentiment: Mapped[Optional[Sentiment]] = mapped_column(
+        Enum(Sentiment, name="sentiment_enum", create_type=False), nullable=True
+    )
+    sentiment_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    analysis_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    ai_raw_response: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    article: Mapped["Article"] = relationship("Article", back_populates="ai_summary")

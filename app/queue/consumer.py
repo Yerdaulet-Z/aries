@@ -4,7 +4,7 @@ import logging
 import uuid
 from app.config import settings
 from app.database import AsyncSessionLocal, init_db
-from app.models import AnalysisStatus, Article
+from app.models import AnalysisStatus, Article, AISummary
 from app.queue.client import MessageQueue
 from app.services.ai import ai_service
 
@@ -32,15 +32,18 @@ async def process_analysis(payload: dict) -> None:
         try:
             text = "\n".join(part for part in [article.description or "", article.content or ""] if part)
             result, raw_response = await ai_service.analyze(title=article.title, text=text)
-            article.summary = result.summary
-            article.sentiment = result.sentiment
-            article.sentiment_score = result.sentiment_score
-            article.ai_raw_response = raw_response
+            
+            article.ai_summary = AISummary(
+                summary=result.summary,
+                sentiment=result.sentiment,
+                sentiment_score=result.sentiment_score,
+                ai_raw_response=raw_response
+            )
             article.analysis_status = AnalysisStatus.COMPLETED
             await db.commit()
         except Exception as err:
             article.analysis_status = AnalysisStatus.FAILED
-            article.analysis_error = str(err)
+            article.ai_summary = AISummary(analysis_error=str(err))
             await db.commit()
             logger.exception("Analysis failed for article %s", article.id)
 
