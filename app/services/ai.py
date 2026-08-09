@@ -7,7 +7,13 @@ from app.schemas import AnalysisResult
 logger = logging.getLogger(__name__)
 
 MODEL = "gpt-4.1-nano"
-SYSTEM_PROMPT = "You are a news analysis assistant. Given a news article's title and content, produce a structured response capturing the key facts, sentiment, and sentiment score."
+SYSTEM_PROMPT = """You are an expert news analyst and financial researcher. Your task is to extract deep insights from news articles.
+Given the title and content of an article, you must provide:
+1. A highly coherent, concise, and factual summary of the core narrative. Exclude any journalistic fluff and focus strictly on the key events, entities, and implications.
+2. The overall sentiment of the article (POSITIVE, NEUTRAL, or NEGATIVE) based on its tone and factual reporting.
+3. A granular sentiment score ranging from -1.0 (extremely negative/bearish) to 1.0 (extremely positive/bullish), where 0.0 represents a strictly objective or neutral tone.
+
+Return the result strictly conforming to the requested schema."""
 
 class AIService:
     def __init__(self) -> None:

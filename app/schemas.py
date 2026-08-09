@@ -45,26 +45,26 @@ class ListArticlesQuery(BaseModel):
 class ArticleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: UUID
-    title: str
-    description: Optional[str] = None
-    content: Optional[str] = None
-    url: str
-    image_url: Optional[str] = None
-    source_name: str
-    published_at: datetime
+    id: UUID = Field(..., description="Unique identifier for the article")
+    title: str = Field(..., description="Headline or title of the article")
+    description: Optional[str] = Field(None, description="Short summary or excerpt provided by the news source")
+    content: Optional[str] = Field(None, description="Full or partial content of the article")
+    url: str = Field(..., description="Original URL to the full article")
+    image_url: Optional[str] = Field(None, description="URL to the article's featured image")
+    source_name: str = Field(..., description="Name of the publisher (e.g., 'Reuters', 'BBC News')")
+    published_at: datetime = Field(..., description="Publication timestamp in UTC")
 
-    analysis_status: AnalysisStatus
-    summary: Optional[str] = None
-    sentiment: Optional[Sentiment] = None
-    sentiment_score: Optional[float] = None
-    analysis_error: Optional[str] = None
-    ai_raw_response: Optional[dict] = None
+    analysis_status: AnalysisStatus = Field(..., description="Current lifecycle state of the AI analysis job")
+    summary: Optional[str] = Field(None, description="AI-generated comprehensive summary of the article")
+    sentiment: Optional[Sentiment] = Field(None, description="Overall sentiment category (POSITIVE, NEUTRAL, NEGATIVE)")
+    sentiment_score: Optional[float] = Field(None, description="Granular sentiment score from -1.0 (highly negative) to 1.0 (highly positive)")
+    analysis_error: Optional[str] = Field(None, description="Error message if the AI analysis failed")
+    ai_raw_response: Optional[dict] = Field(None, description="Raw structured JSON response output from the OpenAI API")
 
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime = Field(..., description="Timestamp when the article was first indexed into the database")
+    updated_at: datetime = Field(..., description="Timestamp when the article record was last modified")
 
 class AnalysisResult(BaseModel):
-    summary: str
-    sentiment: Sentiment
-    sentiment_score: float
+    summary: str = Field(..., description="A concise, factual, and well-structured summary of the article's core narrative.")
+    sentiment: Sentiment = Field(..., description="The overall sentiment of the article towards its main subject.")
+    sentiment_score: float = Field(..., description="A float between -1.0 and 1.0 representing the intensity of the sentiment. E.g., -0.9 is extremely negative, 0.0 is completely neutral.")
