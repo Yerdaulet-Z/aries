@@ -3,7 +3,7 @@ import logging
 from openai import AsyncOpenAI
 from app.core.config import settings
 from app.db.models import Sentiment
-from app.schemas.articles import AnalysisResult
+from app.core.schemas import AnalysisResult
 
 logger = logging.getLogger(__name__)
 
