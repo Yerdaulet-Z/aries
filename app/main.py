@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.db.session import init_db
-from app.worker.client import MessageQueue
+from app.core.rabbitmq import MessageQueue
 from app.api.routes import router, set_message_queue
 
 logging.basicConfig(

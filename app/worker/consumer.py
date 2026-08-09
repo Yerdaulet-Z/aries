@@ -5,7 +5,7 @@ import uuid
 from app.core.config import settings
 from app.db.session import AsyncSessionLocal, init_db
 from app.db.models import AnalysisStatus, Article, AISummary
-from app.worker.client import MessageQueue
+from app.core.rabbitmq import MessageQueue
 from app.services.ai import ai_service
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")

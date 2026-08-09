@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.db.models import AnalysisStatus
-from app.worker.client import MessageQueue
+from app.core.rabbitmq import MessageQueue
 from app.schemas.articles import ArticleResponse, SearchArticlesQuery, ListArticlesQuery
 from app.services import articles as article_service
 from app.services.news import news_service, RateLimitExceeded
