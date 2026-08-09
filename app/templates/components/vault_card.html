@@ -10,6 +10,12 @@
      hx-swap="outerHTML"
      {% endif %}>
      
+    {% if article.image_url %}
+        <img src="{{ article.image_url }}" alt="Article Image" class="card-img" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">
+    {% else %}
+        <div class="card-img" style="background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">No Image</div>
+    {% endif %}
+
     <div class="card-body">
         <h3 class="card-title" style="font-size: 1.1rem; margin-bottom: 0.5rem;">
             <a href="{{ article.url }}" target="_blank" style="color: inherit; text-decoration: none;">{{ article.title }}</a>
@@ -44,7 +50,7 @@
                 <p style="margin-top: 0.5rem; color: var(--text-secondary);">{{ article.ai_summary.summary }}</p>
             </div>
             
-            <div class="card-footer">
+            <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <span class="badge 
                     {% if article.ai_summary.sentiment == 'POSITIVE' %} badge-positive
                     {% elif article.ai_summary.sentiment == 'NEGATIVE' %} badge-negative
@@ -53,25 +59,43 @@
                 ">
                     {{ article.ai_summary.sentiment.value if article.ai_summary.sentiment else article.ai_summary.sentiment }} ({{ "%.2f"|format(article.ai_summary.sentiment_score) if article.ai_summary.sentiment_score else "0" }})
                 </span>
-                <span style="font-size: 0.8rem; color: var(--text-secondary);">
-                    {{ article.published_at.strftime('%Y-%m-%d %H:%M') if article.published_at else '' }}
-                </span>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">
+                        {{ article.published_at.strftime('%Y-%m-%d %H:%M') if article.published_at else '' }}
+                    </span>
+                    <button class="btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 4px; cursor: pointer;"
+                            hx-delete="/ui/vault/card/{{ article.id }}"
+                            hx-target="closest .card"
+                            hx-swap="outerHTML"
+                            hx-confirm="Are you sure you want to delete this article?">
+                        Delete
+                    </button>
+                </div>
             </div>
         {% elif (article.analysis_status|string) in ["AnalysisStatus.FAILED", "FAILED"] and article.ai_summary %}
             <div style="color: var(--danger); font-size: 0.9rem; flex: 1;">
                 Error: {{ article.ai_summary.analysis_error }}
             </div>
         {% elif (article.analysis_status|string) in ["AnalysisStatus.PENDING", "PENDING", "AnalysisStatus.FAILED", "FAILED"] %}
-            <div class="card-footer" style="margin-top: 1rem;">
+            <div class="card-footer" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <span style="font-size: 0.8rem; color: var(--text-secondary);">
                     {{ article.published_at.strftime('%Y-%m-%d %H:%M') if article.published_at else '' }}
                 </span>
-                <button class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;"
-                        hx-post="/ui/analyze/{{ article.id }}"
-                        hx-target="closest .card"
-                        hx-swap="outerHTML">
-                    Analyze
-                </button>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <button class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                            hx-post="/ui/analyze/{{ article.id }}"
+                            hx-target="closest .card"
+                            hx-swap="outerHTML">
+                        Analyze
+                    </button>
+                    <button class="btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 4px; cursor: pointer;"
+                            hx-delete="/ui/vault/card/{{ article.id }}"
+                            hx-target="closest .card"
+                            hx-swap="outerHTML"
+                            hx-confirm="Are you sure you want to delete this article?">
+                        Delete
+                    </button>
+                </div>
             </div>
         {% else %}
             <!-- Stage Progress Indicator & Bar -->

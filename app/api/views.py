@@ -2,11 +2,8 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
 
 from app.db.session import get_db
-from app.db.models import Article
 from app.api.routes import search_articles, analyze_article
 from app.core.schemas import SearchArticlesQuery, ListArticlesQuery
 from app.services import articles as article_service
@@ -62,8 +59,8 @@ async def trigger_analysis_view(
             if e.status_code != 409:
                 raise
         
-        # Re-fetch for the template and return vault card view
-        article = await db.scalar(select(Article).where(Article.id == art_uuid).options(joinedload(Article.ai_summary)))
+        # Re-fetch via service layer for template rendering
+        article = await article_service.get_by_id(db, art_uuid)
         return templates.TemplateResponse(request=request, name="components/vault_card.html", context={"articles": [article]})
         
     except HTTPException as e:
@@ -102,10 +99,21 @@ async def vault_single_card(request: Request, article_id: str, db: AsyncSession 
         
         if not article:
             # Return 200 OK with empty string so HTMX replaces the card with nothing (destroys it)
-            # returning 404 would cause HTMX to ignore the response and keep polling forever.
             return HTMLResponse("", status_code=200)
             
         return templates.TemplateResponse(request=request, name="components/vault_card.html", context={"articles": [article]})
     except Exception as e:
         logger.error(f"Error polling card: {e}")
+        return HTMLResponse(f"<div style='color:red;'>Error: {str(e)}</div>", status_code=500)
+
+
+@router.delete("/ui/vault/card/{article_id}", response_class=HTMLResponse)
+async def delete_vault_card(article_id: str, db: AsyncSession = Depends(get_db)):
+    """Delete an article and return empty HTML so HTMX removes it from the UI."""
+    try:
+        art_uuid = uuid.UUID(article_id)
+        await article_service.delete_article(db, art_uuid)
+        return HTMLResponse("", status_code=200)
+    except Exception as e:
+        logger.error(f"Error deleting card: {e}")
         return HTMLResponse(f"<div style='color:red;'>Error: {str(e)}</div>", status_code=500)

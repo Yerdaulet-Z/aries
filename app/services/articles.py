@@ -118,3 +118,11 @@ async def query(
 async def update_status(db: AsyncSession, article: Article, status: AnalysisStatus) -> None:
     article.analysis_status = status
     await db.commit()
+
+async def delete_article(db: AsyncSession, article_id: uuid.UUID) -> bool:
+    article = await db.get(Article, article_id)
+    if not article:
+        return False
+    await db.delete(article)
+    await db.commit()
+    return True

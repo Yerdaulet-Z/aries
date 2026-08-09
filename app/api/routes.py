@@ -2,7 +2,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.db.models import AnalysisStatus
@@ -91,3 +91,10 @@ async def analyze_article(article_id: uuid.UUID, db: AsyncSession = Depends(get_
     await article_service.update_status(db, article, AnalysisStatus.QUEUED)
     await _get_mq().publish(ANALYSIS_QUEUE, {"article_id": str(article.id)})
     return {"message": "Analysis job queued", "article_id": str(article.id), "status": AnalysisStatus.QUEUED}
+
+@router.delete("/{article_id}", status_code=204)
+async def delete_article(article_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    deleted = await article_service.delete_article(db, article_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Article not found")
+    return Response(status_code=204)
