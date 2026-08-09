@@ -20,17 +20,37 @@ mq = MessageQueue(settings.RABBITMQ_URL)
 logger = logging.getLogger(__name__)
 
 
+import asyncio
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: init DB + connect RabbitMQ. Shutdown: close MQ."""
+    """Startup: init DB + connect RabbitMQ + launch background AI worker."""
     await init_db()
     
     _mq = MessageQueue(settings.RABBITMQ_URL)
     await _mq.connect()
-    
     set_message_queue(_mq)
-    logger.info("Application started successfully.")
+    
+    # Start embedded AI worker consumer loop
+    worker_mq = MessageQueue(settings.RABBITMQ_URL)
+    await worker_mq.connect()
+    
+    from app.worker.consumer import process_analysis, QUEUE_NAME
+    
+    async def _start_worker():
+        try:
+            logger.info("Embedded background AI worker consuming from RabbitMQ...")
+            await worker_mq.consume(QUEUE_NAME, process_analysis)
+        except Exception as e:
+            logger.error("Worker exception: %s", e)
+
+    worker_task = asyncio.create_task(_start_worker())
+    logger.info("Application and embedded AI worker started successfully.")
+    
     yield
+    
+    worker_task.cancel()
+    await worker_mq.close()
     await _mq.close()
 
 
