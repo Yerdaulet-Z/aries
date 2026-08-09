@@ -9,6 +9,9 @@ class RateLimitExceeded(Exception):
     pass
 
 class NewsService:
+    # TODO: Reuse a single httpx.AsyncClient instance instead of creating one per request.
+    #       Creating a new client per call wastes TCP connections and skips HTTP/2 multiplexing.
+    #       Initialize self._client in __init__ and close it in an explicit shutdown method.
     SEARCH_URL = "https://gnews.io/api/v4/search"
 
     async def search(

@@ -50,6 +50,9 @@ class Article(Base):
     source_name: Mapped[str] = mapped_column(String(255), nullable=False, doc="Name of the publisher or news source")
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False, doc="Date and time the article was published (UTC)")
 
+    # TODO: In production, separate transient processing state from the Article domain entity.
+    #       Move analysis_status to a dedicated `task_runs` table with progress_pct (0-100),
+    #       current_step text, started_at, completed_at, and retry_count columns.
     analysis_status: Mapped[AnalysisStatus] = mapped_column(
         Enum(AnalysisStatus, name="analysis_status_enum", create_type=False),
         default=AnalysisStatus.PENDING,
@@ -64,6 +67,8 @@ class Article(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False), server_default=func.timezone('utc', func.now()), nullable=False, doc="Timestamp when the record was created"
     )
+    # TODO: updated_at trigger only fires on UPDATE. Consider using Alembic migrations
+    #       instead of raw DDL in init_db() for production schema management.
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False), server_default=func.timezone('utc', func.now()), nullable=False, doc="Timestamp when the record was last updated"
     )

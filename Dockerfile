@@ -1,3 +1,5 @@
+# TODO: Use multi-stage build to reduce final image size (~900MB -> ~200MB).
+#       Stage 1: install deps in a builder image. Stage 2: copy only site-packages + app code.
 FROM python:3.12-slim
 
 WORKDIR /app

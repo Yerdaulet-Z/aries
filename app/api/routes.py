@@ -12,6 +12,8 @@ from app.services import articles as article_service
 from app.services.news import news_service, RateLimitExceeded
 
 router = APIRouter(prefix="/api/articles", tags=["Articles"])
+# TODO: Replace module-level global `_mq` with FastAPI dependency injection (app.state)
+#       to avoid mutable global state and improve testability.
 _mq: MessageQueue | None = None
 ANALYSIS_QUEUE = "article_analysis"
 
@@ -45,6 +47,7 @@ async def search_articles(
     articles = await article_service.upsert_from_gnews(db, raw_articles)
     return articles
 
+# TODO: Add pagination headers (X-Total-Count, Link) so clients know total results.
 @router.get("", response_model=list[ArticleResponse])
 async def list_articles(
     query_params: ListArticlesQuery = Depends(),

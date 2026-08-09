@@ -7,6 +7,7 @@ from app.core.schemas import AnalysisResult
 
 logger = logging.getLogger(__name__)
 
+# TODO: Move MODEL to config.py so it can be swapped (e.g. gpt-4.1-mini for higher quality) without code changes
 MODEL = "gpt-4.1-nano"
 SYSTEM_PROMPT = """You are an expert news analyst and financial researcher. Your task is to extract deep insights from news articles.
 Given the title and content of an article, you must provide:
@@ -21,6 +22,10 @@ class AIService:
         self._client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
     async def analyze(self, title: str, text: str) -> tuple[AnalysisResult, dict]:
+        # TODO: Add input token counting and truncation (OpenAI has a context window limit).
+        #       Long articles could exceed the model's max tokens and fail silently.
+        #       Use tiktoken to count tokens and truncate `text` if needed.
+        # TODO: Add retry logic with exponential backoff for transient OpenAI errors (429, 500, 503).
         user_content = f"Title: {title}\n\nContent: {text}"
         completion = await self._client.beta.chat.completions.parse(
             model=MODEL,

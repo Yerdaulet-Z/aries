@@ -4,9 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.core.config import settings
 from app.db.models import Base
 
+# TODO: Add connection pool tuning for production (pool_size, max_overflow, pool_recycle).
+#       Default pool of 5 connections may be insufficient under high concurrency.
 engine = create_async_engine(settings.DATABASE_URL, echo=False)
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+# TODO: Use Alembic for schema migrations in production instead of create_all() + raw DDL.
+#       create_all() cannot alter existing columns, add new constraints, or rename tables.
 async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

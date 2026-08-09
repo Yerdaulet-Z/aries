@@ -73,6 +73,8 @@ async def trigger_analysis_view(
 @router.get("/ui/vault", response_class=HTMLResponse)
 async def vault_articles(request: Request, query_params: ListArticlesQuery = Depends(), db: AsyncSession = Depends(get_db)):
     """Fetch all articles for the vault tab."""
+    # TODO: DRY violation — this duplicates the sort_by extraction logic from routes.py.
+    #       Extract into a shared helper or make ListArticlesQuery expose .sort_value property.
     sort_val = query_params.sort_by.value if hasattr(query_params.sort_by, "value") else str(query_params.sort_by)
     articles = await article_service.query(
         db,
@@ -90,6 +92,8 @@ async def vault_articles(request: Request, query_params: ListArticlesQuery = Dep
     return templates.TemplateResponse(request=request, name="components/vault_card.html", context={"articles": articles})
 
 
+# TODO: Replace short polling (hx-trigger="every 1s") with Server-Sent Events (SSE)
+#       backed by Redis Pub/Sub for zero-DB-query real-time progress streaming.
 @router.get("/ui/vault/card/{article_id}", response_class=HTMLResponse)
 async def vault_single_card(request: Request, article_id: str, db: AsyncSession = Depends(get_db)):
     """Poll endpoint for a single vault card."""

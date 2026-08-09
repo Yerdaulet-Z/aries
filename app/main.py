@@ -16,7 +16,6 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
 )
 
-mq = MessageQueue(settings.RABBITMQ_URL)
 logger = logging.getLogger(__name__)
 
 
@@ -44,6 +43,9 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error("Worker exception: %s", e)
 
+    # TODO: In production, run the worker as a separate process/container
+    #       instead of embedding it in the API process. The embedded pattern
+    #       is a convenience for single-container Railway deployment.
     worker_task = asyncio.create_task(_start_worker())
     logger.info("Application and embedded AI worker started successfully.")
     
@@ -63,7 +65,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tighten in production
+    # TODO: Replace wildcard "*" with explicit allowed origins in production
+    #       (e.g. ["https://aries-production.up.railway.app"]).
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

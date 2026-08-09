@@ -12,6 +12,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelna
 logger = logging.getLogger(__name__)
 QUEUE_NAME = "article_analysis"
 
+# TODO: Replace raw asyncio consumer loop with Celery or Temporal for production-grade
+#       retry policies, dead-letter queues (DLQ), and exponential backoff.
 async def process_analysis(payload: dict) -> None:
     article_id_str = payload.get("article_id")
     if not article_id_str:
@@ -30,6 +32,8 @@ async def process_analysis(payload: dict) -> None:
         article.analysis_status = AnalysisStatus.EXTRACTING_TEXT
         await db.commit()
         logger.info("Article %s: Extracting content...", article.id)
+        # TODO: Remove artificial sleep — exists only for demo progress bar visibility.
+        #       In production, the actual HTTP download / text extraction takes real time.
         await asyncio.sleep(max(settings.WORKER_SLEEP_SECONDS, 1.5))
 
         try:
@@ -62,6 +66,9 @@ async def process_analysis(payload: dict) -> None:
             logger.info("Article %s analysis complete!", article.id)
 
         except Exception as err:
+            # TODO: Storing error as AISummary row is a workaround. In production,
+            #       add an `last_error` column on Article or use a separate `task_runs` table
+            #       to avoid creating orphan AISummary records on retry.
             article.analysis_status = AnalysisStatus.FAILED
             article.ai_summary = AISummary(analysis_error=str(err))
             await db.commit()

@@ -69,6 +69,9 @@ class MessageQueue:
 
         async with queue.iterator() as queue_iter:
             async for message in queue_iter:
+                # TODO: message.process() auto-acks on success and nacks on exception.
+                #       In production, add manual ack with dead-letter queue (DLQ) routing
+                #       so permanently failing messages don't block the queue forever.
                 async with message.process():
                     payload = json.loads(message.body.decode())
                     logger.info("Received from %s: %s", queue_name, payload)
