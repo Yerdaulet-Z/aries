@@ -7,7 +7,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import joinedload
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models import AnalysisStatus, Article
+from app.db.models import AnalysisStatus, Article
 
 logger = logging.getLogger(__name__)
 

@@ -4,10 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings
-from app.database import init_db
-from app.queue.client import MessageQueue
-from app.routes import router, set_message_queue
+from app.core.config import settings
+from app.db.session import init_db
+from app.worker.client import MessageQueue
+from app.api.routes import router, set_message_queue
 
 logging.basicConfig(
     level=logging.INFO,

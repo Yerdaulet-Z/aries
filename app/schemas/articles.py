@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.models import AnalysisStatus, Sentiment
+from app.db.models import AnalysisStatus, Sentiment
 import enum
 
 class SortBy(str, enum.Enum):

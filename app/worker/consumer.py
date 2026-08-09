@@ -2,10 +2,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from app.config import settings
-from app.database import AsyncSessionLocal, init_db
-from app.models import AnalysisStatus, Article, AISummary
-from app.queue.client import MessageQueue
+from app.core.config import settings
+from app.db.session import AsyncSessionLocal, init_db
+from app.db.models import AnalysisStatus, Article, AISummary
+from app.worker.client import MessageQueue
 from app.services.ai import ai_service
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")

@@ -1,8 +1,9 @@
 from __future__ import annotations
 import logging
 from openai import AsyncOpenAI
-from app.config import settings
-from app.schemas import AnalysisResult
+from app.core.config import settings
+from app.db.models import Sentiment
+from app.schemas.articles import AnalysisResult
 
 logger = logging.getLogger(__name__)
 

@@ -47,7 +47,7 @@ services:
 
   worker:
     build: .
-    command: ["python", "-m", "app.queue.consumer"]
+    command: ["python", "-m", "app.worker.consumer"]
     env_file:
       - .env
     environment:
